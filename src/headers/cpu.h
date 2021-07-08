@@ -7,9 +7,6 @@ class CPU
 {
 
 public:
-
-	void reset();
-
 	// Control Registers
 	uint16_t pc = 0x00;	// Program counter
 	uint8_t sp = 0x00;	// stack pointer, 256 depth
@@ -23,6 +20,20 @@ public:
 
 	void clock();
 	uint8_t cycles;
+
+	void reset();
+
+	enum flags
+	{
+		C, // carry
+		Z, // zero
+		I, // interrupt disable
+		D, // decmial mode, not used in emulation
+		B, // Break 
+		U, // not used
+		V, // overflow
+		N  // negative
+	};
 
 
 
