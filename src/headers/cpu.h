@@ -18,15 +18,8 @@ public:
 	uint8_t y = 0x00;	// y register
 
 	// STATUS FLAGS
-	bool carry; // carry flag
-	bool zero; // zero flag
-	bool intDis; // interrupt disable
-	bool decimal; // decimal flag
-	bool overflow; // overflow flag
-	bool negative; // negative flag
-
-	void setCarry(bool cond) {if(cond) carry = true;}
-
+	std::array<bool,8> statusFlags; 
+	void setStatus(uint8_t status, bool val) {statusFlags[status] = val;}
 
 	void clock();
 	uint8_t cycles;
