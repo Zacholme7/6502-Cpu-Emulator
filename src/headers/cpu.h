@@ -7,6 +7,7 @@ class CPU
 {
 
 public:
+	CPU();
 	// Control Registers
 	uint16_t pc = 0x00;	// Program counter
 	uint8_t sp = 0x00;	// stack pointer, 256 depth
@@ -35,17 +36,54 @@ public:
 		N  // negative
 	};
 
+	// 13 Addressing modes
+	/*
+	enum AddressingMode
+	{
+		Implicit,
+		Accumulator,
+		Immediate,
+		ZeroPage,
+		ZeroPageX,
+		ZeroPageY,
+		Relative,
+		Absolute,
+		AbsoluteX,
+		AbsoluteY,
+		Indirect,
+		IndirectX, 
+		IndirectY
+	};
+	*/
+
+	// struct to represent an opcode and an addressing mode
+	struct Instruction
+	{
+		uint8_t (CPU::*addrMode)(); 
+		uint8_t (CPU::*opcode)(); 
+	};
+
+
+	// jumptable for the 256 instructions
+	Instruction jmpTable[256];
 
 
 private:
 
-	// Addressing Modes
-	uint8_t IMP();	uint8_t IMM();	
-	uint8_t ZP0();	uint8_t ZPX();	
-	uint8_t ZPY();	uint8_t REL();
-	uint8_t ABS();	uint8_t ABX();	
-	uint8_t ABY();	uint8_t IND();	
-	uint8_t IZX();	uint8_t IZY();
+	//Addressing Modes
+	uint8_t Implied();	
+	uint8_t Accumulator();	
+	uint8_t Immediate();	
+	uint8_t ZeroPage();	
+	uint8_t ZeroPageX();	
+	uint8_t ZeroPageY();	
+	uint8_t Relative();	
+	uint8_t Absolute();	
+	uint8_t AbsoluteX();	
+	uint8_t AbsoluteY();	
+	uint8_t Indirect();	
+	uint8_t IndirectX();	
+	uint8_t IndirectY();	
 
 
 	// 56 opcodes
