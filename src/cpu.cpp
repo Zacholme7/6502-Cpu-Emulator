@@ -227,66 +227,128 @@ void CPU::reset()
 }
 
 
-
-void CPU::clock()
+// BUS
+// --------------------------------------
+void CPU::write(uint16_t addr, uint8_t val)
 {
-	while(cycles > 0)
-	{
-		
-	}
-	cycles--;
+	(*bus).write(addr, val);
+}
+
+void CPU::read(uint16_t addr)
+{
+	return (*bus).read(addr);
+}
+// ---------------------------------------
+
+
+
+
+void CPU::execute()
+{
+	/*
+	 * reset the cycles
+	 * rest the page crossed logic
+	 * get the current opcode
+	 * executre the addressing mode to get correct vals
+	 * execute the opcode
+	 * wait corret num of cycles
+	 */
 }
 
 // ADDRESSING MODES IMPLEMENTATION
 // --------------------------------------
-
-uint8_t CPU::IMP()
+void CPU::Implied()
 {
+	currAddMode = IMP;
 }
 
-uint8_t CPU::IMM()
+void CPU::Accumulator()
 {
+	fetchedVal = a;
+	currAddMode = ACC;
 }
 
-uint8_t CPU::ZP0()
+void CPU::Immediate()
 {
+	currAddr = pc++;
+	fetchedVal = read(currAddr);
+	currAddMode = IMM;
 }
 
-uint8_t CPU::ZPX()
+void CPU::ZeroPage()
 {
+	fetchedAddr = read(pc++) & 0x00FF;
+	fetchedVal = read(fetchedAddr);
+	currAddMode = ZP;
 }
 
-uint8_t CPU::ZPY()
+void CPU::ZeroPageX()
 {
+	fetchedAddr = (read(pc++) + x) & 0x00FF;
+	fetchedVal = read(fetchedAddr);
+	currAddMode = ZPX;
 }
 
-uint8_t CPU::REL()
+void CPU::ZeroPageY()
 {
+	fetchedAddr = (read(pc++) + y) & 0x00FF;
+	fetchedVal = read(fetchedAddr);
+	currAddMode = ZPY;
 }
 
-uint8_t CPU::ABS()
+void CPU::Relative()
 {
+	currAddMode = REL;
 }
 
-uint8_t CPU::ABX()
+void CPU::Absolute()
 {
+	uint16_t rightByte = read(pc++);
+	uint16_t leftByte = read(pc++);
+	fetchedAddr = (leftByte << 8) | rightByte;
+	fetchedVal = read(fetchedAddr);
+	currAddMode = ABS;
 }
 
-uint8_t CPU::ABY()
+void CPU::AbsoluteX()
 {
+	uint16_t rightByte = read(pc++);
+	uint16_t leftByte = read(pc++);
+	fetchedAddr = ((leftByte << 8) | rightByte) + x;
+	fetchedVal = read(fetchedAddr);
+	currAddMode = ABSX;
 }
 
-uint8_t CPU::IND()
+void CPU::AbsoluteY()
 {
+	uint16_t rightByte = read(pc++);
+	uint16_t leftByte = read(pc++);
+	fetchedAddr = ((leftByte << 8) | rightByte) + y;
+	fetchedVal = read(fetchedAddr);
+	currAddMode = ABSY;
 }
 
-uint8_t CPU::IZX()
+void CPU::Indirect()
 {
+	uint16_t rightByte = read(pc++);
+	uint16_t leftByte = read(pc++);
+	fetchedAddr = leftByte << 8) | rightByte
+	fetchedVal = read(fetchedAddr);
+	fetchedAddr = (read(addrInd + 1) << 8) | read(addInd);
+
+	currAddMode = IND;
 }
 
-uint8_t CPU::IZY()
+void CPU::IndirectX()
 {
+	currAddMode = INDX;
 }
+
+void CPU::IndirectY()
+{
+	currAddMode = INDY;
+}
+	
 //-----------------------------------------
 
 
@@ -296,296 +358,514 @@ uint8_t CPU::IZY()
 //-----------------------------------------
 uint8_t CPU::ADC()
 {
-}
+	groupOneCycle();
+};
 
 uint8_t CPU::AND()
 {
-	a &= read(/* some addr */);
+
+	/*
+	a &= read( some addr );
 	setStatus(Z, a == 0);
 	setStatus(N, a & 0x80);
 	return 0;
+	*/
+	groupOneCycle();
 }
 
 uint8_t CPU::ASL()
 {
+	groupTwoCycle();
 }
 
 uint8_t CPU::BCC()
 {
+	// have to check page and and branch
+	cycles += 2; // relative
 }
+
 
 uint8_t CPU::BCS()
 {
+	// have to check page and and branch
+	cycles += 2; // relative
 }
 
 uint8_t CPU::BEQ()
 {
+	// have to check page and and branch
+	cycles += 2; // relative
 }
 
 uint8_t CPU::BIT()
 {
+	switch(currAddrMode)
+	{
+		case ZP: cycles += 3; break;
+		case ABS: cycles += 4; break;
+		default: break;
+	}
 }
 
 uint8_t CPU::BMI()
 {
+	// have to check page and and branch
+	cycles += 2; // relative
 }
 
 uint8_t CPU::BNE()
 {
+	// have to check page and and branch
+	cycles += 2; // relative
 }
 
 uint8_t CPU::BPL()
 {
+	// have to check page and and branch
+	cycles += 2; // relative
 }
 
 uint8_t CPU::BRK()
 {
+	cycles += 7; // implied 
 }
 
 uint8_t CPU::BVC()
 {
+	// have to check page and and branch
+	cycles += 2; // relative
 }
 
+// Branch if Overflow set
 uint8_t CPU::BVS()
 {
+	// have to check page and and branch
+	cycles += 2;// relative
 }
 
-uint8_t CPU::CLC()
+// Clear Carry Flag
+void CPU::CLC()
 {
 	setStatus(C, 0);
-	return 0;
+	cycles += 2;
 }
 
-uint8_t CPU::CLD()
+// Clear Decmial Mode
+void CPU::CLD()
 {
 	setStatus(D, 0);
-	return 0;
+	cycles += 2;
 }
 
-uint8_t CPU::CLI()
+// Clear Interrupt Disable
+void CPU::CLI()
 {
 	setStatus(I, 0);
-	return 0;
+	cycles += 2;
 }
 
-uint8_t CPU::CLV()
+// Clear OverFlow Flag
+void CPU::CLV()
 {
 	setStatus(V, 0);
-	return 0;
+	cycles += 2;
 }
 
-uint8_t CPU::CMP()
+void CPU::CMP()
 {
+	groupOneCycle();	
+}
+
+void CPU::CPX()
+{
+	switch(currAddrMode)
+	{
+		case IMM: cycles += 2; break;
+		case ZP: cycles += 3; break;
+		case ABS: cycles += 4; break;
+		default: break;
+	}
+}
+
+void CPU::CPY()
+{
+	switch(currAddrMode)
+	{
+		case IMM: cycles += 2; break;
+		case ZP: cycles += 3; break;
+		case ABS: cycles += 4; break;
+		default: break;
+	}
+}
+
+void CPU::DEC()
+{
+	switch(currAddrMode)
+	{
+		case ZP: cycles += 5; break;
+		case ZPX: cycles += 6; break;
+		case ABS: cycles += 6; break;
+		case ABSX: cycles += 7; break;
+		default: break;
+	}
+}
+
+// Decrement X Register
+void CPU::DEX()
+{
+	x -= 1;
+	setStatusZN(x == 0x00, x & 0x80);
+	cycles += 2; // implied
+}
+
+// Decrement Y Register
+void CPU::DEY()
+{
+	y -= 1;
+	setStatusZN(y == 0x00, y & 0x80);
+	cycles += 2; // implied
+}
+
+// Exclusive OR
+void CPU::EOR()
+{
+	a ^= fetchedVal;
+	setStatusZN(a == 0x00, a & 0x80);
+	groupOneCycle();
+}
+
+// Incremenet Memory
+void CPU::INC()
+{
+	switch(currAddrMode)
+	{
+		case ZP: cycles += 5; break;
+		case ZPX: cycles += 6; break;
+		case ABS: cycles += 6; break;
+		case ABSX: cycles += 7; break;
+		default: break;
+	}
+}
+
+// Incremenet X Register
+void CPU::INX()
+{
+	x += 1;
+	setStatusZN(x == 0x00, x & 0x80);
+	cycles += 2; // implied
+}
+
+// Incremenet Y Register
+void CPU::INY()
+{
+	y += 1;
+	setStatusZN(y == 0x00, y & 0x80);
+	cycles += 2; // implied
+}
+
+void CPU::JMP()
+{
+	switch(currAddrMode)
+	{
+		case ABS: cycles += 3; break;
+		case IND: cycles += 5; break;
+		default: break;
+	}
+}
+
+void CPU::JSR()
+{
+	cycles += 6; // absolute
+}
+
+// Load Accumulator
+void CPU::LDA()
+{
+	a = fetchedVal;
+	setStatusZN(a == 0x00, a & 0x80);
+	groupOneCycle();
+
+}
+
+// Load X Register
+void CPU::LDX()
+{
+	x = fetchedVal;
+	setStatusZN(x == 0x00, x & 0x80);
+	switch(currAddrMode)
+	{
+		case IMM: cycles += 2; break;
+		case ZP: cycles += 3; break;
+		case ZPY: cycles += 4; break;
+		case ABS: cycles += 4; break;
+		case ABSY: {
+			if(pageCrossed) cycles +=1;
+			cycles += 4;
+			break;
+		}
+		default: break;
+	}
+}
+
+// Load Y Register 
+void CPU::LDY()
+{
+	y = fetchedVal;
+	setStatusZN(y == 0x00, y & 0x80);
+	switch(currAddrMode)
+	{
+		case IMM: cycles += 2; break;
+		case ZP: cycles += 3; break;
+		case ZPX: cycles += 4; break;
+		case ABS: cycles += 4; break;
+		case ABSX: {
+			if(pageCrossed) cycles +=1;
+			cycles += 4;
+			break;
+		}
+		default: break;
+	}
+}
+
+void CPU::LSR()
+{
+	groupTwoCycle();
+}
+
+void CPU::NOP()
+{
+	cycles += 2; // implied
+}
+
+void CPU::ORA()
+{
+	a != read(/* some addr */);
+	groupOneCycle();
+}
+
+// Push Accumulator
+void CPU::PHA()
+{
+	write(0x0100 + sp, a);
+	sp--;
+	cycles += 3; // implied
+}
+
+void CPU::PHP()
+{
+	cycles += 3; // implied
+}
+	uint8_t cycles; // number of cycles current instruction takes
+
+void CPU::PLA()
+{
+	cycles += 4; // implied
+}
+
+void CPU::PLP()
+{
+	cycles += 4; // implied
+}
+
+void CPU::ROL()
+{
+	groupTwoCycle();
+}
+
+void CPU::ROR()
+{
+	groupTwoCycle();
+}
+
+void CPU::RTI()
+{
+	cycles += 6; // implied
+}
+
+void CPU::RTS()
+{
+	cycles += 6; // implied
+}
+
+
+// Subtract with Carry
+void CPU::SBC()
+{
+	groupOneCycle();
+}
+
+// Set Carry Flag
+void CPU::SEC()
+{
+	setStatus(C, 1);
+	cycles += 2;
+}
+
+// Set Decmimal Flag
+void CPU::SED()
+{
+	setStatus(D, 1);
+	cycles += 2;
+}
+
+// Set Interrupt Disable
+void CPU::SEI()
+{
+	setStatus(I, 1);
+	cycles += 2;
+}
+
+// Store Accumulator in Memory
+void CPU::STA()
+{
+	write(someaddr, a);
+	switch(currAddrMode)
+	{
+		case ZP: cycles += 3; break;
+		case ZPX: cycles += 4; break;
+		case ABS: cycles += 4; break;
+		case ABSX: cycles += 5; break;
+		case ABSY: cycles += 5; break;
+		case INDX: cycles += 6; break;
+		case INDY: cycles += 6; break;
+		default: break;
+	}
 	
 }
 
-uint8_t CPU::CPX()
+// Store X in Memory
+void CPU::STX()
 {
+	write(fetchedAddr, x);
+	switch(currAddrMode)
+	{
+		case ZP: cycles += 3; break;
+		case ZPY: cycles += 4; break;
+		case ABS: cycles += 4; break;
+		default: break;
+	}
 }
 
-uint8_t CPU::CPY()
+// Store Y in Memory
+void CPU::STY()
 {
+	write(fetchedAddr, y);
+	switch(currAddrMode)
+	{
+		case ZP: cycles += 3; break;
+		case ZPX: cycles += 4; break;
+		case ABS: cycles += 4; break;
+		default: break;
+	}
 }
 
-uint8_t CPU::DEC()
-{
-}
-
-uint8_t CPU::DEX()
-{
-	x -= 1;
-	setStatus(Z, x == 0);
-	setStatus(N, x & 0x80);
-	return 0;
-}
-
-uint8_t CPU::DEY()
-{
-	y -= 1;
-	setStatus(Z, y == 0);
-	setStatus(N, y & 0x80);
-	return 0;
-}
-
-uint8_t CPU::EOR()
-{
-	a ^= read(/* some addr */);
-	setStatus(Z, a == 0);
-	setStatus(N, a & 0x80);
-	return 0;
-}
-
-uint8_t CPU::INC()
-{
-}
-
-uint8_t CPU::INX()
-{
-	x += 1;
-	setStatus(Z, x == 0);
-	setStatus(N, x & 0x80);
-	return 0;
-}
-
-uint8_t CPU::INY()
-{
-	y += 1;
-	setStatus(Z, y == 0);
-	setStatus(N, y & 0x80);
-	return 0;
-}
-
-uint8_t CPU::JMP()
-{
-}
-
-uint8_t CPU::JSR()
-{
-}
-
-uint8_t CPU::LDA()
-{
-}
-
-uint8_t CPU::LDX()
-{
-}
-
-uint8_t CPU::LDY()
-{
-}
-
-uint8_t CPU::LSR()
-{
-}
-
-uint8_t CPU::NOP()
-{
-}
-
-uint8_t CPU::ORA()
-{
-	a != read(/* some addr */);
-	return 0;
-}
-
-uint8_t CPU::PHA()
-{
-}
-
-uint8_t CPU::PHP()
-{
-}
-
-uint8_t CPU::PLA()
-{
-}
-
-uint8_t CPU::PLP()
-{
-}
-
-uint8_t CPU::ROL()
-{
-}
-
-uint8_t CPU::ROR()
-{
-}
-
-uint8_t CPU::RTI()
-{
-}
-
-uint8_t CPU::RTS()
-{
-}
-
-uint8_t CPU::SBC()
-{
-
-}
-
-uint8_t CPU::SEC()
-{
-	setStatus(C, 1);
-	return 0;
-}
-
-uint8_t CPU::SED()
-{
-	setStatus(D, 1);
-	return 0;
-}
-
-uint8_t CPU::SEI()
-{
-	setStatus(I, 1);
-	return 0;
-}
-
-
-uint8_t CPU::STA()
-{
-	//write(someaddr, a)
-	return 0;
-}
-
-uint8_t CPU::STX()
-{
-	//write(someaddr, x)
-	return 0;
-}
-
-uint8_t CPU::STY()
-{
-	//write(someaddr, y)
-	return 0;
-}
-
-uint8_t CPU::TAX()
+// Transfer Accumulator to X
+void CPU::TAX()
 {
 	x = a;
-	setStatus(Z, x == 0x00);
-	setStatus(N, x & 0x80);
-	return 0;
+	setStatusZN(x == 0x00, x & 0x80);
+	cycles += 2;
 }
 
-uint8_t CPU::TAY()
+// Transfer Accumulator to Y
+void CPU::TAY()
 {
 	y = a;
-	setStatus(Z, y == 0x00);
-	setStatus(N, y & 0x80);
-	return 0;
+	setStatusZN(y == 0x00, y & 0x80);
+	cycles += 2;
 }
 
-uint8_t CPU::TSX()
+// Transfer Stack Pointer to X
+void CPU::TSX()
 {
 	x = sp;
-	setStatus(Z, x == 0x00);
-	setStatus(N, x & 0x80);
-	return 0;
+	setStatusZN(x == 0x00, x & 0x80);
+	cycles += 2;
 }
 
-uint8_t CPU::TXA()
+// Transfer X to Accumulator
+void CPU::TXA()
 {
 	a = x;
-	setStatus(Z, a == 0x00);
-	setStatus(N, a & 0x80);
-	return 0;
+	setStatusZN(a == 0x00, a & 0x80);
+	cycles += 2;
 }
 
-uint8_t CPU::TXS()
+// Transfer X to Stack Pointer
+void CPU::TXS()
 {
 	sp = x;
-	return 0;
+	cycles += 2;
 }
 
-uint8_t CPU::TYA()
+// Transfer Y to Accumulator
+void CPU::TYA()
 {
 	a = y;
-	setStatus(Z, a == 0x00);
-	setStatus(N, a & 0x80);
-	return 0;
+	setStatusZN(a == 0x00, a & 0x80);
+	cycles += 2;
 }
 //-----------------------------------------
+
+
+
+void CPU::groupOneCycle()
+{
+	switch(currAddrMode)
+	{
+		case IMM: cycles += 2; break;
+		case ZP: cycles += 3; break;
+		case ZPX: cycles += 4; break;
+		case ABS: cycles += 4; break;
+		case ABSX: {
+			if(pageCrossed) cycles +=1;
+			cycles += 4;
+			break;
+		} 
+		case ABSY: {
+			if(pageCrossed) cycles +=1;
+			cycles += 4;
+			break;
+		} 
+		case INDX: cycles += 6; break;
+		case INDY: {
+			if(pageCrossed) cycles +=1;
+			cycles += 5;
+			break;
+		} 
+		default: break;
+	}
+}
+
+void CPU::groupTwoCycle()
+{
+	switch(currAddrMode)
+	{
+		case ACC: cycles += 2; break;
+		case ZP: cycles += 5; break;
+		case ZPX: cycles += 6; break;
+		case ABS: cycles += 6; break;
+		case ABSX: cycles += 7; break;
+		default: break;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

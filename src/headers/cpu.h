@@ -8,6 +8,13 @@ class CPU
 
 public:
 	CPU();
+
+	// bus logic that allows reading/writing to bus from cpu
+	Bus* bus;
+	void connectBus(Bus* bus) { bus = bus; }
+	void write(uint16_t addr, uint8_t val);
+	uint8_t read(uint16_t addr);
+
 	// Control Registers
 	uint16_t pc = 0x00;	// Program counter
 	uint8_t sp = 0x00;	// stack pointer, 256 depth
@@ -15,15 +22,34 @@ public:
 	uint8_t x = 0x00;	// x register
 	uint8_t y = 0x00;	// y register
 
-	// STATUS FLAGS
-	std::array<bool,8> statusFlags; 
-	void setStatus(uint8_t status, bool val) {statusFlags[status] = val;}
 
-	void clock();
-	uint8_t cycles;
+	void execute(); // exectues an instruction
+	uint8_t opcode; // opcode for current instruction
+
+
+		
+	uint8_t cycles; // number of cycles current instruction takes
+	// Sets the cycles correct based on the group the instruction corresponds to
+	void groupOneCycle();
+	void groupTwoCycle();
+	void groupThreeCycle();
+
+	void push(uint8_t val); // push onto the stack
+	uint8_t pop(); // pop from the stack
+	uint8_t fetchedVal; // fetched val from mem using addrModes
+	uint16_t currAddr; // the current Address, determined from addrMode
 
 	void reset();
 
+	// Logic to determind and check if a page was crossed
+ 	bool isPageCrossed(uint16_t pc);
+	bool pageCrossed;
+
+	// Status Flags 
+	std::array<bool,8> statusFlags; 
+	void setStatus(uint8_t status, bool val) {statusFlags[status] = val;}
+	void setStatusZN(bool zeroCond, bool negCond){statusFlags[Z] = zeroCond; statusFlags[N] = negCond;} // since ZN set together a lot
+	
 	enum flags
 	{
 		C, // carry
@@ -36,25 +62,24 @@ public:
 		N  // negative
 	};
 
-	// 13 Addressing modes
-	/*
+	// Enum for addressing modes, used to set curr addrMode
 	enum AddressingMode
 	{
-		Implicit,
-		Accumulator,
-		Immediate,
-		ZeroPage,
-		ZeroPageX,
-		ZeroPageY,
-		Relative,
-		Absolute,
-		AbsoluteX,
-		AbsoluteY,
-		Indirect,
-		IndirectX, 
-		IndirectY
+		IMP,
+		ACC,
+		IMM,
+		ZP,
+		ZPX,
+		ZPY,
+		REL,
+		ABS,
+		ABSX,
+		ABSY,
+		IND,
+		INDX,
+		INDY
 	};
-	*/
+	AddressingMode currAddrMode;
 
 	// struct to represent an opcode and an addressing mode
 	struct Instruction
@@ -63,42 +88,80 @@ public:
 		uint8_t (CPU::*opcode)(); 
 	};
 
-
 	// jumptable for the 256 instructions
 	Instruction jmpTable[256];
-
-
 private:
 
 	//Addressing Modes
-	uint8_t Implied();	
-	uint8_t Accumulator();	
-	uint8_t Immediate();	
-	uint8_t ZeroPage();	
-	uint8_t ZeroPageX();	
-	uint8_t ZeroPageY();	
-	uint8_t Relative();	
-	uint8_t Absolute();	
-	uint8_t AbsoluteX();	
-	uint8_t AbsoluteY();	
-	uint8_t Indirect();	
-	uint8_t IndirectX();	
-	uint8_t IndirectY();	
-
+	void Implied();	
+	void Accumulator();	
+	void Immediate();	
+	void ZeroPage();	
+	void ZeroPageX();	
+	void ZeroPageY();	
+	void Relative();	
+	void Absolute();	
+	void AbsoluteX();	
+	void AbsoluteY();	
+	void Indirect();	
+	void IndirectX();	
+	void IndirectY();	
 
 	// 56 opcodes
-	uint8_t ADC();  uint8_t AND();  uint8_t ASL();  uint8_t BCC();
-    	uint8_t BCS();  uint8_t BEQ();  uint8_t BIT();  uint8_t BMI();
-	uint8_t BNE();  uint8_t BPL();  uint8_t BRK();  uint8_t BVC();
-	uint8_t BVS();  uint8_t CLC();  uint8_t CLD();  uint8_t CLI();
-	uint8_t CLV();  uint8_t CMP();  uint8_t CPX();  uint8_t CPY();
-	uint8_t DEC();  uint8_t DEX();  uint8_t DEY();  uint8_t EOR();
-	uint8_t INC();  uint8_t INX();  uint8_t INY();  uint8_t JMP();
-	uint8_t JSR();  uint8_t LDA();  uint8_t LDX();  uint8_t LDY();
-	uint8_t LSR();  uint8_t NOP();  uint8_t ORA();  uint8_t PHA();
-	uint8_t PHP();  uint8_t PLA();  uint8_t PLP();  uint8_t ROL();
-	uint8_t ROR();  uint8_t RTI();  uint8_t RTS();  uint8_t SBC();
-	uint8_t SEC();  uint8_t SED();  uint8_t SEI();  uint8_t STA();
-	uint8_t STX();  uint8_t STY();  uint8_t TAX();  uint8_t TAY();
-	uint8_t TSX();  uint8_t TXA();  uint8_t TXS();  uint8_t TYA();
+	void ADC();
+	void AND();
+	void ASL();
+	void BCC();
+    	void BCS();
+	void BEQ();
+	void BIT();
+	void BMI();
+	void BNE();
+	void BPL();
+	void BRK();
+	void BVC();
+	void BVS();
+	void CLC();
+	void CLD();
+	void CLI();
+	void CLV();
+	void CMP();
+	void CPX();
+	void CPY();
+	void DEC();
+	void DEX();
+	void DEY();
+	void EOR();
+	void INC();
+	void INX();
+	void INY();
+	void JMP();
+	void JSR();
+	void LDA();
+	void LDX();
+	void LDY();
+	void LSR();
+	void NOP();
+	void ORA();
+	void PHA();
+	void PHP();
+	void PLA();
+	void PLP();
+	void ROL();
+	void ROR();
+	void RTI();
+	void RTS();
+	void SBC();
+	void SEC();
+	void SED();
+	void SEI();
+	void STA();
+	void STX();
+	void STY();
+	void TAX();
+	void TAY();
+	void TSX();
+	void TXA();
+	void TXS();
+	void TYA();
 };
