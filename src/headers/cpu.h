@@ -2,20 +2,30 @@
 
 #include "bus.h"
 #include <cstdint>
+#include <vector>
 
 class CPU
 {
 
 public:
-	CPU();
 
-	// bus logic that allows reading/writing to bus from cpu
+
+	CPU();
+	~CPU();
+
+	// LOOKUP TABLES
+	typedef void (CPU::*addrPtr)(); // typedef for function pointer to the addressing mode function
+	typedef void (CPU::*opPtr)();   // typedef for function pointer to the opcode functions
+	std::vector<addrPtr> addrPtrs;
+	std::vector<opPtr> opPtrs;
+
+	// BUS LOGIC
 	Bus* bus;
 	void connectBus(Bus* bus) { bus = bus; }
 	void write(uint16_t addr, uint8_t val);
 	uint8_t read(uint16_t addr);
 
-	// Control Registers
+	// CONTROL REGISTERS
 	uint16_t pc = 0x00;	// Program counter
 	uint8_t sp = 0x00;	// stack pointer, 256 depth
 	uint8_t a = 0x00;	// accumulator
@@ -23,16 +33,14 @@ public:
 	uint8_t y = 0x00;	// y register
 
 
-	void execute(); // exectues an instruction
+	// CONTROL LOGIC
+	void step(); // exectues an instruction
 	uint8_t opcode; // opcode for current instruction
+	uint8_t cycles; // number of cycles current instruction takes
 
 
 		
-	uint8_t cycles; // number of cycles current instruction takes
 	// Sets the cycles correct based on the group the instruction corresponds to
-	void groupOneCycle();
-	void groupTwoCycle();
-	void groupThreeCycle();
 
 	void push(uint8_t val); // push onto the stack
 	uint8_t pop(); // pop from the stack
@@ -106,6 +114,7 @@ private:
 	void Indirect();	
 	void IndirectX();	
 	void IndirectY();	
+	void XXXAddr();
 
 	// 56 opcodes
 	void ADC();
@@ -164,4 +173,5 @@ private:
 	void TXA();
 	void TXS();
 	void TYA();
+	void XXX();
 };

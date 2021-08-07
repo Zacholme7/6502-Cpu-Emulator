@@ -1,0 +1,8 @@
+August 4th
+---------
+- setup sdl
+- makefile now compiles and links with SDL
+
+August 7th
+--------
+- finished the opcode and addr tables

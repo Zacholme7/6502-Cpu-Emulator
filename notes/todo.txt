@@ -1,0 +1,40 @@
+CPU
+------
+- finish implementing opcodes
+incomplete 
+- SBC
+- RTS
+- RTI
+- ROR
+- ROL
+- PLP
+- PLA
+- PHP
+- ORA
+- NOP
+- LSR
+- JSR
+- JMP
+- INC
+- DEC
+- CPY
+- CPX
+- CMP
+- BVS
+- BVC
+- BRK
+- BPL
+- BNE
+- BMI
+- BIT
+- BEQ
+- BCS
+- BCC
+- ASL
+- AND
+- ADC
+
+
+PPU
+----
+- set up rendering context
