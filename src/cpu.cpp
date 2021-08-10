@@ -277,6 +277,19 @@ void CPU::AND()
 // Arithmetic shift left
 void CPU::ASL()
 {
+	uint8_t tmp = fetchedVal << 1;
+	setStatus(C, fetchedVal & 0x80);
+	setStatusZN(tmp == 0x00, tmp & 0x80);
+
+	if(currAddrMode == ACC)
+	{
+		a = tmp;
+	}
+	else
+	{
+		write(currAddr, tmp);
+	}
+
 	switch(currAddrMode)
 	{
 		case ACC: cycles += 2; break;
@@ -324,6 +337,9 @@ void CPU::BEQ()
 // Bit Test
 void CPU::BIT()
 {
+	uint8_t tmp = a & fetchedVal;
+	setStatus(V, fetchedVal & (1 << 6));
+	setStatusZN(tmp == 0x00, fetchedVal & (1 << 7));
 	switch(currAddrMode)
 	{
 		case ZP: cycles += 3; break;
@@ -423,6 +439,9 @@ void CPU::CLV()
 
 void CPU::CMP()
 {
+	uint8_t tmp = a - fetchedVal;
+	setStatus(C, a >= fetchedVal);
+	setStatusZN(a == fetchedVal, tmp & 0x80);
 	switch(currAddrMode)
 	{
 		case IMM: cycles += 2; break;
@@ -449,8 +468,12 @@ void CPU::CMP()
 	}
 }
 
+// Compare X Register
 void CPU::CPX()
 {
+	uint8_t tmp = x - fetchedVal;
+	setStatus(C, x >= fetchedVal);
+	setStatusZN(x == fetchedVal, tmp & 0x80);
 	switch(currAddrMode)
 	{
 		case IMM: cycles += 2; break;
@@ -460,8 +483,12 @@ void CPU::CPX()
 	}
 }
 
+// Compare Y Register
 void CPU::CPY()
 {
+	uint8_t tmp = y - fetchedVal;
+	setStatus(C, y >= fetchedVal);
+	setStatusZN(y == fetchedVal, tmp & 0x80);
 	switch(currAddrMode)
 	{
 		case IMM: cycles += 2; break;
@@ -471,8 +498,12 @@ void CPU::CPY()
 	}
 }
 
+// Decrement memory
 void CPU::DEC()
 {
+	uint8_t tmp = fetchedVal - 1;
+	setStatusZN(tmp == 0x00, tmp & 0x80);
+	write(currAddr, tmp);
 	switch(currAddrMode)
 	{
 		case ZP: cycles += 5; break;
@@ -533,6 +564,9 @@ void CPU::EOR()
 // Incremenet Memory
 void CPU::INC()
 {
+	uint8_t tmp = fetchedVal + 1;
+	setStatusZN(tmp == 0x00, tmp & 0x80);
+	write(currAddr, tmp);
 	switch(currAddrMode)
 	{
 		case ZP: cycles += 5; break;
@@ -559,8 +593,10 @@ void CPU::INY()
 	cycles += 2; // implied
 }
 
+// Jump
 void CPU::JMP()
 {
+	pc = currAddr;
 	switch(currAddrMode)
 	{
 		case ABS: cycles += 3; break;
@@ -646,8 +682,22 @@ void CPU::LDY()
 	}
 }
 
+// Logical shift right
 void CPU::LSR()
 {
+	uint8_t tmp = fetchedVal >> 1;
+	setStatus(C, fetchedVal & 0x01);
+	setStatusZN(tmp == 0x00, tmp & 0x80);
+
+	if(currAddrMode == ACC)
+	{
+		a = tmp;
+	}
+	else
+	{
+		write(currAddr, tmp);
+	}
+
 	switch(currAddrMode)
 	{
 		case ACC: cycles += 2; break;
@@ -660,14 +710,17 @@ void CPU::LSR()
 	
 }
 
+// No operation
 void CPU::NOP()
 {
-	cycles += 2; // implied
+	cycles += 2;
 }
 
+// Logical Inclusive OR
 void CPU::ORA()
 {
-	a != read(/* some addr */);
+	a |= fetchedVal;
+	setStatusZN(a == 0x00, a & 0x80);
 	switch(currAddrMode)
 	{
 		case IMM: cycles += 2; break;

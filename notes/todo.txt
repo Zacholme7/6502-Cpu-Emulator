@@ -5,25 +5,8 @@ incomplete
 - SBC
 - RTS
 - RTI
-- ROR
-- ROL
-- PLP
-- PLA
-- PHP
-- ORA
-- NOP
-- LSR
 - JSR
-- JMP
-- INC
-- DEC
-- CPY
-- CPX
-- CMP
 - BRK
-- BIT
-- ASL
-- AND
 - ADC
 
 
