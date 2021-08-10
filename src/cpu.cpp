@@ -67,9 +67,18 @@ uint8_t CPU::read(uint16_t addr)
 }
 // ---------------------------------------
 
+// Checks if the page has been crossed, allows "cycle" accuracy (not in hardware sense)
+void CPU::isPageCrossed(uint16_t addr, uint16_t hiByte)
+{
+	if((addr & 0xFF00) != (hiByte << 8))
+	{
+		pageCrossed = true;
+	}
+	pageCrossed = false;
+}
 
 
-
+// Preforms the execution cycles, steps one cycle per execution
 void CPU::step()
 {
 	if(cycles == 0)
@@ -126,6 +135,15 @@ void CPU::ZeroPageY()
 
 void CPU::Relative()
 {
+	uint16_t offset = read(pc++);
+	if (offset > 0x80)
+	{
+		currAddr = pc + 1 + offset;
+	} 
+	else
+	{
+		currAddr = pc + 1 + offset - 0x100;
+	}
 	currAddrMode = REL;
 }
 
@@ -144,8 +162,8 @@ void CPU::AbsoluteX()
 	uint16_t leftByte = read(pc++);
 	currAddr = ((leftByte << 8) | rightByte) + x;
 	fetchedVal = read(currAddr);
+	isPageCrossed(currAddr, leftByte);
 	currAddrMode = ABSX;
-	// can change page, check if the highbyte, left byte changes and with ff and check if not equal to hi shift 8
 }
 
 void CPU::AbsoluteY()
@@ -154,8 +172,8 @@ void CPU::AbsoluteY()
 	uint16_t leftByte = read(pc++);
 	currAddr = ((leftByte << 8) | rightByte) + y;
 	fetchedVal = read(currAddr);
+	isPageCrossed(currAddr, leftByte);
 	currAddrMode = ABSY;
-	// can change page, check if the highbyte, left byte changes and with ff and check if not equal to hi shift 8
 }
 
 void CPU::Indirect()
@@ -170,11 +188,23 @@ void CPU::Indirect()
 
 void CPU::IndirectX()
 {
+	uint16_t rightByte = read((uint16_t)(read(pc) + x) & 0x00FF);
+	uint16_t leftByte = read((uint16_t)(read(pc) + x + 1) & 0x00FF);
+	pc++;
+	currAddr = (leftByte << 8) | rightByte;
+	fetchedVal = read(currAddr);
 	currAddrMode = INDX;
+
 }
 
 void CPU::IndirectY()
 {
+	uint16_t rightByte = read((uint16_t)(read(pc) & 0x00FF));
+	uint16_t leftByte = read((uint16_t)(read(pc+1) & 0x00FF));
+	pc++;
+	currAddr = ((leftByte << 8) | rightByte) + y;
+	fetchedVal = read(currAddr);
+	isPageCrossed(currAddr, leftByte);
 	currAddrMode = INDY;
 }
 	
@@ -258,25 +288,40 @@ void CPU::ASL()
 	}
 }
 
+// Branch if Carry Clear
 void CPU::BCC()
 {
-	// have to check page and and branch
-	cycles += 2; // relative
+	if(!getStatus(C))
+	{
+		pc = currAddr;
+		cycles += pageCrossed ? 2: 1;
+	}
+	cycles += 2; 
 }
 
-
+// Branch if Carry Set
 void CPU::BCS()
 {
-	// have to check page and and branch
-	cycles += 2; // relative
+	if(getStatus(C))
+	{
+		pc = currAddr;
+		cycles += pageCrossed ? 2: 1;
+	}
+	cycles += 2; 
 }
 
+// Branch if Equal
 void CPU::BEQ()
 {
-	// have to check page and and branch
-	cycles += 2; // relative
+	if(getStatus(Z))
+	{
+		pc = currAddr;
+		cycles += pageCrossed ? 2: 1;
+	}
+	cycles += 2; 
 }
 
+// Bit Test
 void CPU::BIT()
 {
 	switch(currAddrMode)
@@ -287,40 +332,65 @@ void CPU::BIT()
 	}
 }
 
+// Branch if Minus
 void CPU::BMI()
 {
-	// have to check page and and branch
-	cycles += 2; // relative
+	if(getStatus(N))
+	{
+		pc = currAddr;
+		cycles += pageCrossed ? 2: 1;
+	}
+	cycles += 2; 
 }
 
+// Branch if not Equal
 void CPU::BNE()
 {
-	// have to check page and and branch
-	cycles += 2; // relative
+	if(!getStatus(Z))
+	{
+		pc = currAddr;
+		cycles += pageCrossed ? 2: 1;
+	}
+	cycles += 2; 
 }
 
+// Branch if Positive
 void CPU::BPL()
 {
-	// have to check page and and branch
-	cycles += 2; // relative
+	if(!getStatus(N))
+	{
+		pc = currAddr;
+		cycles += pageCrossed ? 2: 1;
+	}
+	cycles += 2; 
 }
 
+// Force Interrupt
 void CPU::BRK()
 {
 	cycles += 7; // implied 
 }
 
+// Branch if overflow clear
 void CPU::BVC()
 {
-	// have to check page and and branch
-	cycles += 2; // relative
+	if(!getStatus(V))
+	{
+		pc = currAddr;
+		cycles += pageCrossed ? 2: 1;
+	}
+	cycles += 2; 
 }
 
 // Branch if Overflow set
 void CPU::BVS()
 {
-	// have to check page and and branch
-	cycles += 2;// relative
+	if(getStatus(V))
+	{
+		pc = currAddr;
+		cycles += pageCrossed ? 2: 1;
+	}
+	cycles += 2; 
 }
 
 // Clear Carry Flag
@@ -632,23 +702,47 @@ void CPU::PHA()
 	cycles += 3; // implied
 }
 
+// Push Processor status
 void CPU::PHP()
 {
+	write(0x0100 + sp, statusToByte(statusFlags));
+	sp--;
 	cycles += 3; // implied
 }
 
+// Pull Accumulator
 void CPU::PLA()
 {
+	sp++;
+	a = read(0x0100 + sp);
+	setStatusZN(a == 0x00, a & 0x80);
 	cycles += 4; // implied
 }
 
+// Pull Processor Status
 void CPU::PLP()
 {
+	sp++;
+	byteToStatus(read(0x0100 + sp));
 	cycles += 4; // implied
 }
 
+// Rotate Left
 void CPU::ROL()
 {
+	uint8_t tmp = (fetchedVal << 1) | getStatus(C);
+	setStatus(C, fetchedVal & 0x80);
+	setStatusZN(tmp == 0x00, tmp & 0x80);
+
+	if(currAddrMode == ACC)
+	{
+		a = tmp;
+	}
+	else
+	{
+		write(currAddr, tmp);
+	}
+
 	switch(currAddrMode)
 	{
 		case ACC: cycles += 2; break;
@@ -660,8 +754,22 @@ void CPU::ROL()
 	}
 }
 
+// Rotate Right
 void CPU::ROR()
 {
+	uint8_t tmp = (getStatus(C) << 7) | (fetchedVal >> 1);
+	setStatus(C, fetchedVal & 0x01);
+	setStatusZN(tmp == 0x00, tmp & 0x80);
+
+	if(currAddrMode == ACC)
+	{
+		a = tmp;
+	}
+	else
+	{
+		write(currAddr, tmp);
+	}
+	
 	switch(currAddrMode)
 	{
 		case ACC: cycles += 2; break;
@@ -823,5 +931,31 @@ void CPU::TYA()
 	setStatusZN(a == 0x00, a & 0x80);
 	cycles += 2;
 }
+//-----------------------------------------
+
+
+
+
+// HELPERS
+//-----------------------------------------
+uint8_t CPU::statusToByte(std::array<bool,8> flags)
+{
+	uint8_t tmp = 0;
+	for(int i = 0; i < 8; i++)
+	{
+		tmp |= (flags[i] << i);
+	}
+	return tmp;
+}
+
+
+void CPU::byteToStatus(uint8_t stackByte)
+{
+	for(int i = 0; i < 8; i++)
+	{
+		setStatus(i, (stackByte >> i) & 1); 
+	}
+}
+
 //-----------------------------------------
 

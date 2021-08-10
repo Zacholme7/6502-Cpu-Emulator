@@ -6,3 +6,9 @@ August 4th
 August 7th
 --------
 - finished the opcode and addr tables
+
+August 9th
+----------
+- finished all addressing modes, hoping they are right
+- implemented page crossing logic
+

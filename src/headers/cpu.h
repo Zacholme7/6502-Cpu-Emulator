@@ -30,7 +30,7 @@ public:
 	uint8_t sp = 0x00;	// stack pointer, 256 depth
 	uint8_t a = 0x00;	// accumulator
 	uint8_t x = 0x00;	// x register
-	uint8_t y = 0x00;	// y register
+	uint8_t y = 0x00;       // y register
 
 
 	// CONTROL LOGIC
@@ -40,23 +40,24 @@ public:
 
 
 		
-	// Sets the cycles correct based on the group the instruction corresponds to
-
 	void push(uint8_t val); // push onto the stack
 	uint8_t pop(); // pop from the stack
+
 	uint8_t fetchedVal; // fetched val from mem using addrModes
 	uint16_t currAddr; // the current Address, determined from addrMode
 
 	void reset();
-
 	// Logic to determind and check if a page was crossed
- 	bool isPageCrossed(uint16_t pc);
-	bool pageCrossed;
+ 	void isPageCrossed(uint16_t addr, uint16_t hiByte);
+	bool pageCrossed = false;
 
 	// Status Flags 
 	std::array<bool,8> statusFlags; 
 	void setStatus(uint8_t status, bool val) {statusFlags[status] = val;}
 	void setStatusZN(bool zeroCond, bool negCond){statusFlags[Z] = zeroCond; statusFlags[N] = negCond;} // since ZN set together a lot
+	bool getStatus(uint8_t status) {return statusFlags[status];}
+	uint8_t statusToByte(std::array<bool,8> flags);
+	void byteToStatus(uint8_t stackByte);
 	
 	enum flags
 	{
