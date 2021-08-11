@@ -217,6 +217,11 @@ void CPU::IndirectY()
 //-----------------------------------------
 void CPU::ADC()
 {
+	uint16_t sum = a + fetchedVal + getStatus(C);
+	setStatus(C, sum & 0x0100);
+	setStatus(V, (a ^ sum) & (fetchedVal ^ sum) & 0x80);
+	setStatusZN(a == 0, a & 0x80);
+	a = (uint8_t)(sum & 0x00FF);
 	switch(currAddrMode)
 	{
 		case IMM: cycles += 2; break;
@@ -605,8 +610,15 @@ void CPU::JMP()
 	}
 }
 
+// Jump to Subroutine
 void CPU::JSR()
 {
+	pc--;
+	write(0x0100 + sp, (pc >> 8));
+	sp--;
+	write(0x0100 + sp, pc & 0x00FF);
+	sp--;
+	pc = currAddr;
 	cycles += 6; // absolute
 }
 
@@ -836,17 +848,35 @@ void CPU::ROR()
 
 void CPU::RTI()
 {
+	sp++;
+	byteToStatus(read(0x0100 + sp));
+	sp++;
+	uint16_t low = read(0x0100 + sp);
+	sp++;
+	uint16_t high = read(0x0100 + sp);
+	pc = (high << 8) | low;
 	cycles += 6; // implied
 }
 
 void CPU::RTS()
 {
+	sp++;
+	uint16_t low = read(0x0100 + sp);
+	sp++;
+	uint16_t high = read(0x0100 + sp);
+	pc = (high << 8) | low;
+	pc++;
 	cycles += 6; // implied
 }
 
 // Subtract with Carry
 void CPU::SBC()
 {
+	uint16_t diff = a - fetchedVal - !getStatus(C);
+	setStatus(C, !(diff & 0x0100));
+	setStatus(V, (a ^ diff) & (~fetchedVal ^ diff) & 0x80);
+	setStatusZN(diff == 0, diff & 0x80);
+	a = (uint8_t)(diff);
 	switch(currAddrMode)
 	{
 		case IMM: cycles += 2; break;

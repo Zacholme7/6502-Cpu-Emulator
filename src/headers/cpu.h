@@ -56,6 +56,7 @@ public:
 	void setStatus(uint8_t status, bool val) {statusFlags[status] = val;}
 	void setStatusZN(bool zeroCond, bool negCond){statusFlags[Z] = zeroCond; statusFlags[N] = negCond;} // since ZN set together a lot
 	bool getStatus(uint8_t status) {return statusFlags[status];}
+
 	uint8_t statusToByte(std::array<bool,8> flags);
 	void byteToStatus(uint8_t stackByte);
 	

@@ -3,11 +3,9 @@ CPU
 - finish implementing opcodes
 incomplete 
 - SBC
-- RTS
-- RTI
-- JSR
 - BRK
-- ADC
+iterttups???
+test, 100% sure there are logic errors in the code, but i feel like my general approach is sound
 
 
 PPU
